@@ -48,7 +48,7 @@ class ImageRecord(db.Model):
 
 @app.route('/')
 def hello_world():
-    return redirect ("https://docs.fakeface.rest/")
+    return redirect ("https://hankhank10.github.io/fakeface/", code=307)
 
 
 def get_url(gender = "", minimum_age = 0, maximum_age = 0, thumb=False):
@@ -120,5 +120,12 @@ def stats():
     return (str(stats_count) + " faces")
 
 
+@app.after_request
+def set_response_headers(response):
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=11000, debug=True)
+    app.run(host='0.0.0.0', port=11000)
