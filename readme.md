@@ -67,11 +67,11 @@ Browser redirects right to image
 
 The above address can be used in the src for an img in HTML to dynamically generate a new face on each load:
 
-![alt text](https://fakeface.rest/face/view "Dynamically generated image")
+![alt text](https://fakeface.rest/face/view?gender=female "Dynamically generated image")
 
 If you want to insert multiple different faces and prevent the browser caching then you can append any number or random string to the end of the endpoint as follows:
 
-<https://fakeface.rest/face/view/1?gender=male>
+<https://fakeface.rest/face/view/55?gender=male>
 
 <https://fakeface.rest/face/view/anythingcangohere_theapidoesntdoanythingwithit?gender=male>
 
