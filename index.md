@@ -20,8 +20,17 @@ https://fakeface.rest/face/json
 |maximum_age|integer|
 
 ## Response
-
-[To come]
+````
+{
+  age: 45,
+  date_added: "Sun, 02 Aug 2020 22:08:56 GMT",
+  filename: "female_45_b3e57178eb323fee36df8e8b4690c11ef82f3baa.jpg",
+  gender: "female",
+  image_url: "https://content.fakeface.rest/female_45_b3e57178eb323fee36df8e8b4690c11ef82f3baa.jpg",
+  last_served: "Sun, 02 Aug 2020 22:08:56 GMT",
+  source: "thispersondoesnotexist"
+}
+````
 
 ## Example queries:
 
