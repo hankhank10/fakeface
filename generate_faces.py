@@ -4,16 +4,45 @@ import cv2
 import secrets
 from pyagender import PyAgender
 import time
+from datetime import datetime
 
 from time import sleep
+
+from active_alchemy import ActiveAlchemy
+
+db = ActiveAlchemy('sqlite:///db.sqlite')
 
 # settings
 url = "https://thispersondoesnotexist.com/image"
 male_threshold = 0.4
 female_threshold = 0.6
-temp_file = "img.jpg"
-times_to_run = 100
-seconds_to_sleep = 1
+temp_file = "temp_img.jpg"
+times_to_run = 500
+seconds_to_sleep = 2
+
+
+class ImageRecord(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    gender = db.Column(db.String(10))
+    age = db.Column(db.Integer)
+
+    filename = db.Column(db.String(100))
+    hosting = db.Column(db.String(100), default="local")
+
+    def image_url(self):
+        if self.hosting == "local":
+            output = "https://fakeface.rest/static/classified/" + self.filename
+        return output
+
+    date_added = db.Column(db.DateTime)
+    source = db.Column(db.String(100))
+
+    last_served = db.Column(db.DateTime)
+
+    created_at = db.Column(db.DateTime)
+    updated_at = db.Column(db.DateTime)
+    is_deleted = db.Column(db.DateTime)
+    deleted_at = db.Column(db.Boolean)
 
 
 def download_face():
@@ -47,23 +76,34 @@ def move_file(gender, age):
     shutil.move(temp_file, location_to_move_to)
     return filename
 
+
 def write_db(gender, age, filename):
+    image_record = ImageRecord(
+        gender=gender,
+        age=age,
+        filename=filename,
+        date_added=datetime.utcnow(),
+        source="thispersondoesnotexist",
+        hosting="local",
+        last_served=datetime.utcnow()
+    )
+
+    db.session.add(image_record)
+    db.session.commit()
+    return
 
 
 agender = PyAgender()
 starttime = time.time()
 
-print("Getting " + str(times_to_run) + " faces")
 for a in range(1, times_to_run):
-    print("Downloading face " + str(a) + " of " + str(times_to_run) + "... ", end='')
     download_face()
     gender, age = recoginise_face()
     if gender != "unclear":
         print(str(age) + " year old " + gender)
-        move_file(gender, age)
+        filename = move_file(gender, age)
         write_db (gender, age, filename)
     else:
         print("gender unclear, so skipping")
     sleep(seconds_to_sleep)
 
-print("Done in", time.time() - starttime, "seconds")

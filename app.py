@@ -1,15 +1,13 @@
-from flask import Flask, jsonify
-import requests
-import shutil
-import cv2
-import secrets
-from pyagender import PyAgender
+from flask import Flask, jsonify, request, redirect
+
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from datetime import datetime
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 db = SQLAlchemy(app)
 
 db.init_app(app)
@@ -20,84 +18,86 @@ class ImageRecord(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     gender = db.Column(db.String(10))
     age = db.Column(db.Integer)
+
     filename = db.Column(db.String(100))
+    hosting = db.Column(db.String(100), default="local")
+
+    def image_url(self):
+        if self.hosting == "local":
+            output = "https://fakeface.rest/static/classified/" + self.filename
+        return output
+
     date_added = db.Column(db.DateTime)
     source = db.Column(db.String(100))
 
-# settings
-url = "https://thispersondoesnotexist.com/image"
-male_threshold = 0.4
-female_threshold = 0.6
-temp_file = "temp_img.jpg"
+    last_served = db.Column(db.DateTime)
+
+    created_at = db.Column(db.DateTime)
+    updated_at = db.Column(db.DateTime)
+    is_deleted = db.Column(db.DateTime)
+    deleted_at = db.Column(db.Boolean)
 
 
 @app.route('/')
 def hello_world():
-    return 'Hello World!'
+    return redirect ("https://docs.fakeface.rest/")
 
 
-@app.route('/download_face')
-def download_face():
-    # download face
-    response = requests.get(url, stream=True)
-    with open(temp_file, 'wb') as out_file:
-        shutil.copyfileobj(response.raw, out_file)
+def get_url(gender = "", minimum_age = 0, maximum_age = 0):
+    if gender == '':
+        db_output = ImageRecord.query.filter(ImageRecord.age >= minimum_age, ImageRecord.age <= maximum_age).order_by(ImageRecord.last_served).first_or_404()
 
-    return "Downloaded to temporary file"
+    if gender != '':
+        db_output = ImageRecord.query.filter(ImageRecord.gender == gender, ImageRecord.age >= minimum_age, ImageRecord.age <= maximum_age).order_by(ImageRecord.last_served).first_or_404()
 
-
-@app.route('/recognise_face')
-def recognise_face():
-    agender = PyAgender()
-
-    faces = agender.detect_genders_ages(cv2.imread(temp_file))
-    if len(faces) == 1:
-        face = faces[0]
-        gender_numeric = face['gender']
-        age = int(face['age'])
-
-        gender = "unclear"
-        if gender_numeric < male_threshold: gender = "male"
-        if gender_numeric > male_threshold: gender = "female"
-    else:
-        #face not detected or multiple faces detected
-        gender = "unclear"
-        age = 0
-
-    return gender, age
-
-
-@app.route('/generate_face')
-def generate_face():
-    download_face()
-    gender, age = recognise_face()
-
-    image_record = ImageRecord(
-        gender=gender,
-        age=age,
-        filename="Test",
-        date_added=datetime.utcnow())
-
-    db.session.add(image_record)
+    db_output.last_served = datetime.utcnow()
     db.session.commit()
-
-    location_to_move_to = "classified/" + gender + "_" + str(age) + "_" + secrets.token_hex(20) + ".jpg"
-    shutil.move(temp_file, location_to_move_to)
-
-    return gender
+    return db_output.image_url()
 
 
-@app.route('/test')
-def test():
-    db_output = ImageRecord.query.first()
+@app.route('/face/json')
+def output_json():
+    gender = request.args.get('gender', '')
+    minimum_age = request.args.get('minimum_age', 0)
+    maximum_age = request.args.get('maximum_age', 99)
+
+    if gender == '':
+        db_output = ImageRecord.query.filter(ImageRecord.age >= minimum_age, ImageRecord.age <= maximum_age).order_by(ImageRecord.last_served).first_or_404()
+
+    if gender != '':
+        db_output = ImageRecord.query.filter(ImageRecord.gender == gender, ImageRecord.age >= minimum_age, ImageRecord.age <= maximum_age).order_by(ImageRecord.last_served).first_or_404()
+
     dict_output = {
-        'id': db_output.id,
         'gender': db_output.gender,
         'age': db_output.age,
         'filename': db_output.filename,
-        'date_added': db_output.date_added
+        'date_added': db_output.date_added,
+        'source': db_output.source,
+        'image_url': db_output.image_url(),
+        'last_served': db_output.last_served
     }
+
+    db_output.last_served = datetime.utcnow()
+    db.session.commit()
+
     return jsonify(dict_output)
+
+
+@app.route ('/face/view')
+def output_redirect_image():
+    gender = request.args.get('gender', '')
+    minimum_age = request.args.get('minimum_age', 0)
+    maximum_age = request.args.get('maximum_age', 99)
+
+    url_to_show = get_url(gender, minimum_age, maximum_age)
+
+    return redirect (url_to_show)
+
+
+@app.route('/stats')
+def stats():
+    stats_count = ImageRecord.query.count()
+    return (str(stats_count) + " faces")
 
 
 if __name__ == '__main__':
