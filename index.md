@@ -9,17 +9,18 @@ Data can be returned via JSON format, a direct redirect to the image or a simple
 
 # JSON data for a face
 
-## Endpoint
+### Endpoint
 https://fakeface.rest/face/json
 
-## Query parameters
-|optional query parameter|accepted input|
-|---|---|
-|gender|accepts "male" or "female|
-|minimum_age|integer|
-|maximum_age|integer|
+### Optional query parameters
 
-## Response
+* `gender` : accepts "male" or "female"; defaults to both if not provided
+
+* `minimum_age` : integer
+
+* `maximum_age` : integer
+
+### Response
 ````
 {
   age: 45,
@@ -32,7 +33,7 @@ https://fakeface.rest/face/json
 }
 ````
 
-## Example queries:
+### Example queries:
 
 <https://fakeface.rest/face/json>
 
@@ -44,23 +45,23 @@ https://fakeface.rest/face/json
 
 # Redirect to a face
 
-## Endpoint
+### Endpoint
 https://fakeface.rest/face/view
 
-## Query parameters
+### Query parameters
 (same as above for JSON)
 
-## Response
+### Response
 
 Browser redirects right to image
 
-## Example queries:
+### Example queries:
 
 <https://fakeface.rest/face/view>
 
 <https://fakeface.rest/face/view?gender=male>
 
-## Inserting into HTML
+### Inserting into HTML
 
 The above address can be used in the src for an img in HTML to dynamically generate a new face on each load:
 
@@ -75,23 +76,23 @@ If you want to insert multiple different faces and prevent the browser caching t
 
 # Redirect to a thumbnail of a face
 
-## Endpoint
+### Endpoint
 https://fakeface.rest/thumb/view
 
-## Query parameters
+### Query parameters
 (same as above for JSON)
 
-## Response
+### Response
 
 Browser redirects right to thumbnail (350x350 maximum) image.
 
-## Example queries:
+### Example queries:
 
 <https://fakeface.rest/thumb/view>
 
 <https://fakeface.rest/thumb/view?gender=male>
 
-## Inserting into html:
+### Inserting into html:
 
 ![alt text](https://fakeface.rest/thumb/view/99 "Dynamically generated image")
 
