@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request, redirect
 
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.sql import func
 from flask_migrate import Migrate
 from datetime import datetime
 
@@ -23,8 +24,15 @@ class ImageRecord(db.Model):
     hosting = db.Column(db.String(100), default="local")
 
     def image_url(self):
+        output = ""
         if self.hosting == "local":
             output = "https://content.fakeface.rest/" + self.filename
+        return output
+
+    def thumb_url(self):
+        output = ""
+        if self.hosting == "local":
+            output = "https://thumb.fakeface.rest/thumb_" + self.filename
         return output
 
     date_added = db.Column(db.DateTime)
@@ -43,16 +51,17 @@ def hello_world():
     return redirect ("https://docs.fakeface.rest/")
 
 
-def get_url(gender = "", minimum_age = 0, maximum_age = 0):
+def get_url(gender = "", minimum_age = 0, maximum_age = 0, thumb=False):
     if gender == '':
-        db_output = ImageRecord.query.filter(ImageRecord.age >= minimum_age, ImageRecord.age <= maximum_age).order_by(ImageRecord.last_served).first_or_404()
+        db_output = ImageRecord.query.filter(ImageRecord.age >= minimum_age, ImageRecord.age <= maximum_age).order_by(func.random()).first_or_404()
 
     if gender != '':
-        db_output = ImageRecord.query.filter(ImageRecord.gender == gender, ImageRecord.age >= minimum_age, ImageRecord.age <= maximum_age).order_by(ImageRecord.last_served).first_or_404()
+        db_output = ImageRecord.query.filter(ImageRecord.gender == gender, ImageRecord.age >= minimum_age, ImageRecord.age <= maximum_age).order_by(func.random()).first_or_404()
 
     db_output.last_served = datetime.utcnow()
     db.session.commit()
-    return db_output.image_url()
+    if thumb == False: return db_output.image_url()
+    if thumb == True: return db_output.thumb_url()
 
 
 @app.route('/face/json')
@@ -62,10 +71,10 @@ def output_json():
     maximum_age = request.args.get('maximum_age', 99)
 
     if gender == '':
-        db_output = ImageRecord.query.filter(ImageRecord.age >= minimum_age, ImageRecord.age <= maximum_age).order_by(ImageRecord.last_served).first_or_404()
+        db_output = ImageRecord.query.filter(ImageRecord.age >= minimum_age, ImageRecord.age <= maximum_age).order_by(func.random()).first_or_404()
 
     if gender != '':
-        db_output = ImageRecord.query.filter(ImageRecord.gender == gender, ImageRecord.age >= minimum_age, ImageRecord.age <= maximum_age).order_by(ImageRecord.last_served).first_or_404()
+        db_output = ImageRecord.query.filter(ImageRecord.gender == gender, ImageRecord.age >= minimum_age, ImageRecord.age <= maximum_age).order_by(func.random()).first_or_404()
 
     dict_output = {
         'gender': db_output.gender,
@@ -84,14 +93,25 @@ def output_json():
 
 
 @app.route ('/face/view')
-def output_redirect_image():
+@app.route ('/face/view/<x>')
+def output_redirect_image(x = 0):
     gender = request.args.get('gender', '')
     minimum_age = request.args.get('minimum_age', 0)
     maximum_age = request.args.get('maximum_age', 99)
 
-    url_to_show = get_url(gender, minimum_age, maximum_age)
-
+    url_to_show = get_url(gender, minimum_age, maximum_age, False)
     return redirect (url_to_show)
+
+
+@app.route ('/thumb/view')
+@app.route ('/thumb/view/<x>')
+def output_redirect_thumb(x = 0):
+    gender = request.args.get('gender', '')
+    minimum_age = request.args.get('minimum_age', 0)
+    maximum_age = request.args.get('maximum_age', 99)
+
+    url_to_show = get_url(gender, minimum_age, maximum_age, True)
+    return redirect(url_to_show)
 
 
 @app.route('/stats')
