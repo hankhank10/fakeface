@@ -31,7 +31,7 @@ class ImageRecord(db.Model):
 
     def image_url(self):
         if self.hosting == "local":
-            output = "https://fakeface.rest/static/classified/" + self.filename
+            output = "https://fakeface.rest/to_be_uploaded_to_static_host/" + self.filename
         return output
 
     date_added = db.Column(db.DateTime)
