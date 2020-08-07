@@ -47,7 +47,7 @@ class ImageRecord(db.Model):
 
 
 @app.route('/')
-def hello_world():
+def index():
     return redirect ("https://hankhank10.github.io/fakeface/", code=307)
 
 
